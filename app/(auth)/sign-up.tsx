@@ -12,8 +12,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSignUp } from "@clerk/expo/legacy";
 import { useRouter, Link } from "expo-router";
-import clsx from "clsx";
-import { BrandMark, AuthField, AuthButton } from "@/components/auth/auth-ui";
+import {
+  BrandMark,
+  AuthHeading,
+  AuthField,
+  AuthButton,
+} from "@/components/auth/auth-ui";
+import {
+  authColors,
+  authStyles as s,
+} from "@/components/auth/auth-styles";
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -51,31 +59,33 @@ function passwordStrength(password: string): 0 | 1 | 2 | 3 {
 
 const strengthLabels = ["", "Weak", "Fair", "Strong"] as const;
 const strengthColors = [
-  "",
-  "bg-destructive",
-  "bg-yellow-500",
-  "bg-success",
+  "transparent",
+  authColors.destructive,
+  "#eab308",
+  authColors.success,
 ] as const;
 
 function PasswordStrengthBar({ password }: { password: string }) {
   const strength = passwordStrength(password);
   if (!password) return null;
+
   return (
-    <View className="mt-2 gap-1">
-      <View className="flex-row gap-1.5">
+    <View style={{ marginTop: 8, gap: 4 }}>
+      <View style={{ flexDirection: "row", gap: 6 }}>
         {[1, 2, 3].map((level) => (
           <View
             key={level}
-            className={clsx(
-              "h-1 flex-1 rounded-full",
-              level <= strength ? strengthColors[strength] : "bg-border"
-            )}
+            style={{
+              height: 4,
+              flex: 1,
+              borderRadius: 999,
+              backgroundColor:
+                level <= strength ? strengthColors[strength] : "#0000001a",
+            }}
           />
         ))}
       </View>
-      <Text className="text-xs font-sans-medium text-muted-foreground">
-        {strengthLabels[strength]}
-      </Text>
+      <Text style={s.helper}>{strengthLabels[strength]}</Text>
     </View>
   );
 }
@@ -99,7 +109,13 @@ export default function SignUpScreen() {
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   const handleSignUp = useCallback(async () => {
-    if (!isLoaded) return;
+    if (!isLoaded) {
+      Alert.alert(
+        "Connecting",
+        "Authentication service is still initializing. Please wait a moment."
+      );
+      return;
+    }
 
     // Validate before hitting the network
     const nErr = validateName(name);
@@ -143,41 +159,42 @@ export default function SignUpScreen() {
     }
   }, [isLoaded, name, email, password, signUp, router]);
 
+  const isFormFilled =
+    name.trim().length > 0 && email.trim().length > 0 && password.length > 0;
+
   return (
-    <SafeAreaView className="auth-safe-area">
+    <SafeAreaView style={s.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="auth-screen"
+        style={s.keyboard}
       >
         <ScrollView
-          className="auth-scroll"
-          contentContainerStyle={{ flexGrow: 1 }}
+          style={s.scroll}
+          contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="auth-content">
+          <View style={s.content}>
             {/* Brand */}
             <BrandMark />
 
             {/* Heading */}
-            <View className="mt-8 items-center">
-              <Text className="auth-title">Create account</Text>
-              <Text className="auth-subtitle">
-                Start tracking your subscriptions in seconds
-              </Text>
-            </View>
+            <AuthHeading
+              title="Create account"
+              subtitle="Start tracking your subscriptions in seconds"
+            />
 
             {/* Card */}
-            <View className="auth-card">
-              <View className="auth-form">
+            <View style={s.card}>
+              <View style={s.form}>
                 {/* Full Name */}
                 <AuthField label="Full name" error={nameError ?? undefined}>
                   <TextInput
-                    className={clsx(
-                      "auth-input",
-                      nameError && "auth-input-error",
-                      nameFocused && "border-accent"
-                    )}
+                    style={[
+                      s.input,
+                      nameFocused && s.inputFocused,
+                      !!nameError && s.inputError,
+                    ]}
                     placeholder="Enter your name"
                     placeholderTextColor="rgba(0,0,0,0.35)"
                     value={name}
@@ -199,11 +216,11 @@ export default function SignUpScreen() {
                 {/* Email */}
                 <AuthField label="Email" error={emailError ?? undefined}>
                   <TextInput
-                    className={clsx(
-                      "auth-input",
-                      emailError && "auth-input-error",
-                      emailFocused && "border-accent"
-                    )}
+                    style={[
+                      s.input,
+                      emailFocused && s.inputFocused,
+                      !!emailError && s.inputError,
+                    ]}
                     placeholder="Enter your email"
                     placeholderTextColor="rgba(0,0,0,0.35)"
                     value={email}
@@ -227,13 +244,14 @@ export default function SignUpScreen() {
                 {/* Password */}
                 <AuthField label="Password" error={passwordError ?? undefined}>
                   <View>
-                    <View className="relative">
+                    <View>
                       <TextInput
-                        className={clsx(
-                          "auth-input",
-                          passwordError && "auth-input-error",
-                          passwordFocused && "border-accent"
-                        )}
+                        style={[
+                          s.input,
+                          s.inputWithAccessory,
+                          passwordFocused && s.inputFocused,
+                          !!passwordError && s.inputError,
+                        ]}
                         placeholder="Create a password"
                         placeholderTextColor="rgba(0,0,0,0.35)"
                         value={password}
@@ -252,11 +270,11 @@ export default function SignUpScreen() {
                         onSubmitEditing={handleSignUp}
                       />
                       <TouchableOpacity
-                        className="absolute right-4 top-4"
+                        style={s.inputAccessory}
                         onPress={() => setPasswordVisible((v) => !v)}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <Text className="text-sm font-sans-semibold text-muted-foreground">
+                        <Text style={s.inputAccessoryText}>
                           {passwordVisible ? "Hide" : "Show"}
                         </Text>
                       </TouchableOpacity>
@@ -266,7 +284,7 @@ export default function SignUpScreen() {
                 </AuthField>
 
                 {/* Helper */}
-                <Text className="auth-helper">
+                <Text style={s.helper}>
                   By continuing you agree to our Terms of Service and Privacy
                   Policy.
                 </Text>
@@ -276,17 +294,17 @@ export default function SignUpScreen() {
                   label="Create account"
                   onPress={handleSignUp}
                   loading={loading}
-                  disabled={!isLoaded}
+                  disabled={!isFormFilled || loading}
                 />
               </View>
             </View>
 
             {/* Footer */}
-            <View className="auth-link-row">
-              <Text className="auth-link-copy">Already have an account?</Text>
+            <View style={s.linkRow}>
+              <Text style={s.linkCopy}>Already have an account?</Text>
               <Link href="/(auth)/sign-in" asChild>
                 <TouchableOpacity>
-                  <Text className="auth-link">Sign in</Text>
+                  <Text style={s.link}>Sign in</Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -296,4 +314,3 @@ export default function SignUpScreen() {
     </SafeAreaView>
   );
 }
-

@@ -1,21 +1,40 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
-import clsx from "clsx";
+import {
+  authColors,
+  authStyles as s,
+} from "@/components/auth/auth-styles";
 
 // ─── BrandMark ───────────────────────────────────────────────────────────────
 
 export function BrandMark() {
   return (
-    <View className="auth-brand-block">
-      <View className="auth-logo-wrap">
-        <View className="auth-logo-mark">
-          <Text className="auth-logo-mark-text">C</Text>
+    <View style={s.brandBlock}>
+      <View style={s.logoRow}>
+        <View style={s.logoMark}>
+          <Text style={s.logoMarkText}>C</Text>
         </View>
         <View>
-          <Text className="auth-wordmark">Candence</Text>
-          <Text className="auth-wordmark-sub">Smart Subscriptions</Text>
+          <Text style={s.wordmark}>Candence</Text>
+          <Text style={s.wordmarkSub}>Smart Subscriptions</Text>
         </View>
       </View>
+    </View>
+  );
+}
+
+// ─── AuthHeading ─────────────────────────────────────────────────────────────
+
+interface AuthHeadingProps {
+  title: string;
+  subtitle?: React.ReactNode;
+}
+
+export function AuthHeading({ title, subtitle }: AuthHeadingProps) {
+  return (
+    <View style={s.heading}>
+      <Text style={s.title}>{title}</Text>
+      {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -30,10 +49,10 @@ interface AuthFieldProps {
 
 export function AuthField({ label, children, error }: AuthFieldProps) {
   return (
-    <View className="auth-field">
-      <Text className="auth-label">{label}</Text>
+    <View style={s.field}>
+      <Text style={s.label}>{label}</Text>
       {children}
-      {error ? <Text className="auth-error">{error}</Text> : null}
+      {error ? <Text style={s.error}>{error}</Text> : null}
     </View>
   );
 }
@@ -55,14 +74,12 @@ export function AuthButton({
 }: AuthButtonProps) {
   return (
     <TouchableOpacity
-      className={clsx("auth-button", (disabled || loading) && "auth-button-disabled")}
+      style={[s.button, (disabled || loading) && s.buttonDisabled]}
       onPress={onPress}
       disabled={disabled || loading}
       activeOpacity={0.85}
     >
-      <Text className="auth-button-text">
-        {loading ? "Please wait…" : label}
-      </Text>
+      <Text style={s.buttonText}>{loading ? "Please wait…" : label}</Text>
     </TouchableOpacity>
   );
 }
@@ -71,11 +88,13 @@ export function AuthButton({
 
 export function AuthDivider({ label = "or" }: { label?: string }) {
   return (
-    <View className="auth-divider-row">
-      <View className="auth-divider-line" />
-      <Text className="auth-divider-text">{label}</Text>
-      <View className="auth-divider-line" />
+    <View style={s.dividerRow}>
+      <View style={s.dividerLine} />
+      <Text style={s.dividerText}>{label}</Text>
+      <View style={s.dividerLine} />
     </View>
   );
 }
 
+// Re-exported so screens can keep using the palette from one place.
+export { authColors };

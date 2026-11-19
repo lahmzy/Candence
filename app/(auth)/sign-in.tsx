@@ -12,8 +12,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSignIn } from "@clerk/expo/legacy";
 import { useRouter, Link } from "expo-router";
-import clsx from "clsx";
-import { BrandMark, AuthField, AuthButton } from "@/components/auth/auth-ui";
+import {
+  BrandMark,
+  AuthHeading,
+  AuthField,
+  AuthButton,
+} from "@/components/auth/auth-ui";
+import { authStyles as s } from "@/components/auth/auth-styles";
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -46,7 +51,13 @@ export default function SignInScreen() {
   const [passwordFocused, setPasswordFocused] = useState(false);
 
   const handleSignIn = useCallback(async () => {
-    if (!isLoaded) return;
+    if (!isLoaded) {
+      Alert.alert(
+        "Connecting",
+        "Authentication service is still initializing. Please wait a moment."
+      );
+      return;
+    }
 
     // Validate before hitting the network
     const eErr = validateEmail(email);
@@ -83,41 +94,41 @@ export default function SignInScreen() {
     }
   }, [isLoaded, email, password, signIn, setActive, router]);
 
+  const isFormFilled = email.trim().length > 0 && password.length > 0;
+
   return (
-    <SafeAreaView className="auth-safe-area">
+    <SafeAreaView style={s.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="auth-screen"
+        style={s.keyboard}
       >
         <ScrollView
-          className="auth-scroll"
-          contentContainerStyle={{ flexGrow: 1 }}
+          style={s.scroll}
+          contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View className="auth-content">
+          <View style={s.content}>
             {/* Brand */}
             <BrandMark />
 
             {/* Heading */}
-            <View className="mt-8 items-center">
-              <Text className="auth-title">Welcome back</Text>
-              <Text className="auth-subtitle">
-                Sign in to continue managing your subscriptions
-              </Text>
-            </View>
+            <AuthHeading
+              title="Welcome back"
+              subtitle="Sign in to continue managing your subscriptions"
+            />
 
             {/* Card */}
-            <View className="auth-card">
-              <View className="auth-form">
+            <View style={s.card}>
+              <View style={s.form}>
                 {/* Email */}
                 <AuthField label="Email" error={emailError ?? undefined}>
                   <TextInput
-                    className={clsx(
-                      "auth-input",
-                      emailError && "auth-input-error",
-                      emailFocused && "border-accent"
-                    )}
+                    style={[
+                      s.input,
+                      emailFocused && s.inputFocused,
+                      !!emailError && s.inputError,
+                    ]}
                     placeholder="Enter your email"
                     placeholderTextColor="rgba(0,0,0,0.35)"
                     value={email}
@@ -140,13 +151,14 @@ export default function SignInScreen() {
 
                 {/* Password */}
                 <AuthField label="Password" error={passwordError ?? undefined}>
-                  <View className="relative">
+                  <View>
                     <TextInput
-                      className={clsx(
-                        "auth-input",
-                        passwordError && "auth-input-error",
-                        passwordFocused && "border-accent"
-                      )}
+                      style={[
+                        s.input,
+                        s.inputWithAccessory,
+                        passwordFocused && s.inputFocused,
+                        !!passwordError && s.inputError,
+                      ]}
                       placeholder="Enter your password"
                       placeholderTextColor="rgba(0,0,0,0.35)"
                       value={password}
@@ -165,11 +177,11 @@ export default function SignInScreen() {
                       onSubmitEditing={handleSignIn}
                     />
                     <TouchableOpacity
-                      className="absolute right-4 top-4"
+                      style={s.inputAccessory}
                       onPress={() => setPasswordVisible((v) => !v)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     >
-                      <Text className="text-sm font-sans-semibold text-muted-foreground">
+                      <Text style={s.inputAccessoryText}>
                         {passwordVisible ? "Hide" : "Show"}
                       </Text>
                     </TouchableOpacity>
@@ -177,10 +189,8 @@ export default function SignInScreen() {
                 </AuthField>
 
                 {/* Forgot password */}
-                <TouchableOpacity className="self-end -mt-2">
-                  <Text className="text-sm font-sans-semibold text-accent">
-                    Forgot password?
-                  </Text>
+                <TouchableOpacity style={{ alignSelf: "flex-end", marginTop: -4 }}>
+                  <Text style={s.link}>Forgot password?</Text>
                 </TouchableOpacity>
 
                 {/* CTA */}
@@ -188,17 +198,17 @@ export default function SignInScreen() {
                   label="Sign in"
                   onPress={handleSignIn}
                   loading={loading}
-                  disabled={!isLoaded}
+                  disabled={!isFormFilled || loading}
                 />
               </View>
             </View>
 
             {/* Footer */}
-            <View className="auth-link-row">
-              <Text className="auth-link-copy">New to Candence?</Text>
+            <View style={s.linkRow}>
+              <Text style={s.linkCopy}>New to Candence?</Text>
               <Link href="/(auth)/sign-up" asChild>
                 <TouchableOpacity>
-                  <Text className="auth-link">Create an account</Text>
+                  <Text style={s.link}>Create an account</Text>
                 </TouchableOpacity>
               </Link>
             </View>
@@ -208,4 +218,3 @@ export default function SignInScreen() {
     </SafeAreaView>
   );
 }
-

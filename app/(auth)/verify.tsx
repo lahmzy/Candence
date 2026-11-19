@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -11,8 +12,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useSignUp, useSignIn } from "@clerk/expo/legacy";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import clsx from "clsx";
-import { BrandMark, AuthButton } from "@/components/auth/auth-ui";
+import { BrandMark, AuthHeading, AuthButton } from "@/components/auth/auth-ui";
+import { authStyles as s } from "@/components/auth/auth-styles";
 
 // ─── OTP Input ────────────────────────────────────────────────────────────────
 
@@ -23,7 +24,7 @@ interface OtpInputProps {
 }
 
 function OtpInput({ value, onChange, hasError }: OtpInputProps) {
-  const inputRef = useRef<TextInput>(null);
+  const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const digits = value.padEnd(6, " ").split("").slice(0, 6);
 
   return (
@@ -34,7 +35,7 @@ function OtpInput({ value, onChange, hasError }: OtpInputProps) {
       {/* Hidden real input */}
       <TextInput
         ref={inputRef}
-        className="absolute h-0 w-0 opacity-0"
+        style={s.hiddenInput}
         value={value}
         onChangeText={(t) => onChange(t.replace(/\D/g, "").slice(0, 6))}
         keyboardType="number-pad"
@@ -44,24 +45,22 @@ function OtpInput({ value, onChange, hasError }: OtpInputProps) {
       />
 
       {/* Visual digit boxes */}
-      <View className="flex-row justify-center gap-3">
+      <View style={s.otpRow}>
         {digits.map((digit, i) => (
           <View
             key={i}
-            className={clsx(
-              "h-14 w-12 items-center justify-center rounded-2xl border",
+            style={[
+              s.otpBox,
               hasError
-                ? "border-destructive bg-destructive/5"
+                ? s.otpBoxError
                 : value.length === i
-                ? "border-accent bg-accent/5"
+                ? s.otpBoxActive
                 : digit.trim()
-                ? "border-primary/30 bg-card"
-                : "border-border bg-background"
-            )}
+                ? s.otpBoxFilled
+                : null,
+            ]}
           >
-            <Text className="text-2xl font-sans-bold text-primary">
-              {digit.trim()}
-            </Text>
+            <Text style={s.otpDigit}>{digit.trim()}</Text>
           </View>
         ))}
       </View>
@@ -98,6 +97,18 @@ export default function VerifyScreen() {
       });
     }, 1000);
   }, []);
+
+  // `router.back()` throws "The action 'GO_BACK' was not handled by any
+  // navigator" when verify is the *initial* route — e.g. after a reload, or
+  // when Expo Go re-launches the app on this path — because there is no entry
+  // in the stack behind it. Fall back to the home screen instead.
+  const handleGoBack = useCallback(() => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/(tabs)");
+    }
+  }, [router]);
 
   const handleVerify = useCallback(async () => {
     if (code.length !== 6) {
@@ -157,87 +168,92 @@ export default function VerifyScreen() {
   }, [resendCooldown, context, signUp, signIn, startResendCooldown]);
 
   return (
-    <SafeAreaView className="auth-safe-area">
+    <SafeAreaView style={s.safeArea}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="auth-screen"
+        style={s.keyboard}
       >
-        <View className="auth-content">
-          {/* Brand */}
-          <BrandMark />
+        <ScrollView
+          style={s.scroll}
+          contentContainerStyle={s.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={s.content}>
+            {/* Brand */}
+            <BrandMark />
 
-          {/* Heading */}
-          <View className="mt-8 items-center">
-            <Text className="auth-title">Check your email</Text>
-            <Text className="auth-subtitle">
-              We sent a 6-digit code to{"\n"}
-              <Text className="font-sans-bold text-primary">{email}</Text>
-            </Text>
-          </View>
+            {/* Heading */}
+            <AuthHeading
+              title="Check your email"
+              subtitle={
+                <>
+                  We sent a 6-digit code to{"\n"}
+                  <Text style={s.subtitleStrong}>{email}</Text>
+                </>
+              }
+            />
 
-          {/* Card */}
-          <View className="auth-card">
-            <View className="gap-6">
-              {/* OTP input */}
-              <OtpInput
-                value={code}
-                onChange={(v) => {
-                  setCode(v);
-                  if (codeError) setCodeError(null);
-                  // Auto-submit when 6 digits entered
-                  if (v.length === 6) {
-                    setTimeout(() => handleVerify(), 100);
-                  }
-                }}
-                hasError={!!codeError}
-              />
+            {/* Card */}
+            <View style={s.card}>
+              <View style={s.formLoose}>
+                {/* OTP input */}
+                <OtpInput
+                  value={code}
+                  onChange={(v) => {
+                    setCode(v);
+                    if (codeError) setCodeError(null);
+                    // Auto-submit when 6 digits entered
+                    if (v.length === 6) {
+                      setTimeout(() => handleVerify(), 100);
+                    }
+                  }}
+                  hasError={!!codeError}
+                />
 
-              {/* Error message */}
-              {codeError && (
-                <Text className="auth-error text-center">{codeError}</Text>
-              )}
-
-              <AuthButton
-                label="Confirm code"
-                onPress={handleVerify}
-                loading={loading}
-                disabled={code.length < 6}
-              />
-
-              {/* Resend */}
-              <View className="items-center">
-                <Text className="auth-helper text-center">
-                  Didn't receive it?{" "}
-                </Text>
-                <TouchableOpacity
-                  onPress={handleResend}
-                  disabled={resendCooldown > 0}
-                  className="mt-1"
-                >
-                  <Text
-                    className={clsx(
-                      "text-sm font-sans-bold",
-                      resendCooldown > 0 ? "text-muted-foreground" : "text-accent"
-                    )}
-                  >
-                    {resendCooldown > 0
-                      ? `Resend in ${resendCooldown}s`
-                      : "Resend code"}
+                {/* Error message */}
+                {codeError && (
+                  <Text style={[s.error, { textAlign: "center" }]}>
+                    {codeError}
                   </Text>
-                </TouchableOpacity>
+                )}
+
+                <AuthButton
+                  label="Confirm code"
+                  onPress={handleVerify}
+                  loading={loading}
+                  disabled={code.length < 6}
+                />
+
+                {/* Resend */}
+                <View style={{ alignItems: "center" }}>
+                  <Text style={[s.helper, { textAlign: "center" }]}>
+                    Didn&apos;t receive it?{" "}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={handleResend}
+                    disabled={resendCooldown > 0}
+                    style={{ marginTop: 4 }}
+                  >
+                    <Text style={s.link}>
+                      {resendCooldown > 0
+                        ? `Resend in ${resendCooldown}s`
+                        : "Resend code"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Back link */}
-          <View className="auth-link-row">
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text className="auth-link">← Go back</Text>
-            </TouchableOpacity>
+            {/* Back link */}
+            <View style={s.linkRow}>
+              <TouchableOpacity onPress={handleGoBack}>
+                <Text style={s.link}>← Go back</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-

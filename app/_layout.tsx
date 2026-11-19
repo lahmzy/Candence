@@ -35,7 +35,7 @@ function AuthGuard() {
     } else if (isSignedIn && inAuthGroup) {
       router.replace("/(tabs)" as any);
     }
-  }, [isLoaded, isSignedIn, segments]);
+  }, [isLoaded, isSignedIn, segments, router]);
 
   return null;
 }
@@ -53,6 +53,11 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    if (error) {
+      // Without this, a failed font silently falls through and text using the
+      // missing family can render blank on Android.
+      console.error("Failed to load fonts:", error);
+    }
     if (fontsLoaded || error) {
       SplashScreen.hideAsync();
     }
