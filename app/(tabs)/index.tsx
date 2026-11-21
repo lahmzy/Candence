@@ -1,5 +1,6 @@
 import ListHeading from "@/components/ListHeading";
 import SubscriptionCard from "@/components/SubscriptionCard";
+import CreateSubscriptionModal from "@/components/CreateSubscriptionModal";
 import { icons } from "@/constants/icons";
 import { formatCurrency } from "@/lib/utils";
 import { styled } from "nativewind";
@@ -14,45 +15,34 @@ import {HOME_BALANCE, HOME_SUBSCRIPTIONS} from "@/constants/data";
 import images from "@/constants/images";
 import { UPCOMING_SUBSCRIPTIONS } from "@/constants/data";
 
+
 const SafeAreaView = styled(RNSafeAreaView);
 
 export default function Index() {
 
     const { user } = useUser();
-    // const posthog = usePostHog();
+  
     const [expandedSubscriptionId, setExpandedSubscriptionId] = useState<string | null>(null);
     const [isModalVisible, setIsModalVisible] = useState(false);
-    // const { subscriptions, addSubscription } = useSubscriptionStore();
+    const { subscriptions, addSubscription } = useSubscriptionStore();
 
-    // Get upcoming subscriptions (active subscriptions with renewal date within next 7 days)
-    // const upcomingSubscriptions = useMemo(() => {
-    //     const now = dayjs();
-    //     const nextWeek = now.add(7, 'days');
-    //     return subscriptions.filter(sub =>
-    //         sub.status === 'active' &&
-    //         dayjs(sub.renewalDate).isAfter(now) &&
-    //         dayjs(sub.renewalDate).isBefore(nextWeek)
-    //     ).sort((a, b) => dayjs(a.renewalDate).diff(dayjs(b.renewalDate)));
-    // }, [subscriptions]);
+   
+    const upcomingSubscriptions = useMemo(() => {
+        const now = dayjs();
+        const nextWeek = now.add(7, 'days');
+        return subscriptions.filter(sub =>
+            sub.status === 'active' &&
+            dayjs(sub.renewalDate).isAfter(now) &&
+            dayjs(sub.renewalDate).isBefore(nextWeek)
+        ).sort((a, b) => dayjs(a.renewalDate).diff(dayjs(b.renewalDate)));
+    }, [subscriptions]);
 
     const handleSubscriptionPress = (item: Subscription) => {
         const isExpanding = expandedSubscriptionId !== item.id;
         setExpandedSubscriptionId((currentId) => (currentId === item.id ? null : item.id));
-        // posthog.capture(isExpanding ? 'subscription_expanded' : 'subscription_collapsed', {
-        //     subscription_name: item.name,
-        //     subscription_id: item.id,
-        // });
+      
     };
 
-    // const handleCreateSubscription = (newSubscription: Subscription) => {
-    //     addSubscription(newSubscription);
-    //     posthog.capture('subscription_created', {
-    //         subscription_name: newSubscription.name,
-    //         subscription_price: newSubscription.price,
-    //         subscription_frequency: newSubscription.frequency,
-    //         subscription_category: newSubscription.category,
-    //     });
-    // };
 
     // Get user display name: firstName, fullName, or email
     const displayName = user?.firstName || user?.fullName || user?.emailAddresses[0]?.emailAddress || 'User';
@@ -112,7 +102,7 @@ export default function Index() {
             <ListHeading title="All Subscriptions" />
           </>
         )}
-        data={HOME_SUBSCRIPTIONS}
+        data={subscriptions}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <SubscriptionCard
@@ -130,11 +120,10 @@ export default function Index() {
         contentContainerClassName="pb-30"
       />
 
-      {/* <CreateSubscriptionModal
+      <CreateSubscriptionModal
         visible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
-        onSubmit={handleCreateSubscription}
-      /> */}
+      />
     </SafeAreaView>
   );
 }

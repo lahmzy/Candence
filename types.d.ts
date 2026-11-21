@@ -49,6 +49,13 @@ declare global {
 
     interface ListHeadingProps {
         title: string;
+        onActionPress?: () => void;
+    }
+
+    interface CreateSubscriptionModalProps {
+        visible: boolean;
+        onClose: () => void;
+        onSubmit?: (subscription: Subscription) => void;
     }
 }
 
